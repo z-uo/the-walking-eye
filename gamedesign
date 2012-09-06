@@ -6,7 +6,8 @@ ladder:
     you can go down from a wall or cloud by pressing down
     ladder are third a tile 
     you cannot move right or left when you re on a ladder 
+    but turn left or right to fire
     
 cloud:
-    you can jump through a cloud
-    you can pass through it by pressin down a few frames
+    DONE you can jump through a cloud
+    DONE you can pass through it by pressin down a few frames

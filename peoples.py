@@ -56,18 +56,36 @@ class Someone(pygame.sprite.Sprite):
                 doortiles.append(d)
         return walltiles, cloudtiles, laddertiles, doortiles
         
-    def is_onground(self, platform, platformcloud, yvec):
-        if self.yvec < 0:
-            return False
+    def is_onground(self, platform):
         self.underfoot.rect.topleft = (self.rect.left, self.rect.bottom)
-        if self.is_collide(platform):
-            return False
-        if self.underfoot.is_collide(platform):
+        if self.underfoot.is_collide(platform) and not self.is_collide(platform):
+            # he is on the ground
             return True
+        return False
+        
+    def is_oncloud(self, platformcloud):
+        self.underfoot.rect.topleft = (self.rect.left, self.rect.bottom)
         for p in platformcloud:
+            #verify one by one if underfoot collide platform and not the body
             if not pygame.sprite.collide_rect(self, p) and pygame.sprite.collide_rect(self.underfoot, p):
+                #he is on a cloud
                 return True
         return False
+        
+    def is_onladder(self, platformladder):
+        self.underfoot.rect.topleft = (self.rect.left, self.rect.bottom)
+        for p in platformladder:
+            #verify one by one if underfoot collide platform and not the body
+            if not pygame.sprite.collide_rect(self, p) and pygame.sprite.collide_rect(self.underfoot, p):
+                #he is on a ladder
+                return True
+        return False
+    def is_inladder(self, platformladder):
+        if  self.is_collide(platformladder):
+            # he is in a ladder
+            return True
+        return False
+        
         
     def is_collide(self, platform):
         for p in platform:
@@ -139,6 +157,9 @@ class Hero(Someone):
         self.img = self.rimg
         self.underfoot = Underfoot(self.rect.width)
         self.onground = False
+        self.oncloud = False
+        self.cloudtimmer = 10
+        
         self.onladder = False
         self.inladder = False
         self.hang = False
@@ -147,27 +168,34 @@ class Hero(Someone):
         """move hero and adjust if collision
         """
         walltiles, cloudtiles, laddertiles, doortiles = self.tiles_to_check(tiletable)
-        self.onground = self.is_onground(walltiles, cloudtiles, self.yvec)
-        self.inladder = self.is_collide(laddertiles)
+        self.onground = self.is_onground(walltiles)
+        self.oncloud = self.is_oncloud(cloudtiles)
+        self.inladder = self.is_inladder(laddertiles)
+        self.onladder = self.is_onladder(laddertiles)
+        
+        if self.onground or (self.oncloud and not self.yvec<0):
+            self.yvec = 0
+        else:
+            self.yvec += 1
+        if key["jump"] and (self.onground or self.oncloud):
+            self.yvec = -10
+        
+        if self.hang and (key["jump"] or self.onground or self.oncloud or not self.inladder):
+            self.hang = False
+        if (key["up"] and self.inladder) or (key["down"] and self.onladder):
+            self.hang = True
+        
+        
+        if key["down"] and self.oncloud and not self.hang:
+            self.cloudtimmer -= 1
+            print self.cloudtimmer
+            if self.cloudtimmer == 0:
+                self.yvec = 2
+        else:
+            self.cloudtimmer = 10
+        
         
         self.xvec = 0
-        if self.onground == False:
-            self.yvec += 1
-        else:
-            self.yvec = 0
-        if key["jump"] and (self.onground or self.hang):
-            self.yvec = -10
-            self.hang = False
-        
-        if key["up"] and self.inladder:
-            self.yvec = -2
-            self.hang = True
-        elif self.hang and self.inladder and not key["jump"]:
-            self.yvec = 0
-            
-        if not self.inladder:
-            hang = False
-        
         if key["right"]:
             self.xvec += 2
         if key["left"]:
@@ -196,8 +224,10 @@ class Hero(Someone):
         # check moving down
         if self.yvec > 0:
             for i in range(self.yvec):
-                if not self.is_onground(walltiles, cloudtiles, self.yvec):
-                    self.rect = self.rect.move(0, 1)
+                if not self.is_onground(walltiles):
+                    if not self.is_oncloud(cloudtiles) or self.cloudtimmer == 0:
+                        self.rect = self.rect.move(0, 1)
+                    else: break
                 else: break
         # check moving up
         elif self.yvec < 0:

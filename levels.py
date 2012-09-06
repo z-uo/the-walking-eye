@@ -18,6 +18,13 @@ class Platform(pygame.sprite.Sprite):
         self.ladder = False
         self.door = False
         self.doordir = ""
+    #~ def make_ladder(self):
+        #~ self.ladder = True
+        #~ # ladder collision rect = 2 pixels in the center of the tile
+        #~ self.ladderrect = pygame.Rect((self.rect.x + (UNITE/2)) - 1,
+                                      #~ self.rect.y,
+                                      #~ (self.rect.x + (UNITE/2)) + 1,
+                                      #~ UNITE)
         
 
                 
@@ -61,6 +68,7 @@ class Level(pygame.sprite.Sprite):
                     p = Platform(x*UNITE, y*UNITE)
                     p.cloud = True
                     p.ladder = True
+                    #~ p.make_ladder()
                     tiletable[y].append(p)
                 # bottom ladder
                 elif map[y][x] == "b":
@@ -68,6 +76,7 @@ class Level(pygame.sprite.Sprite):
                     imgmap.blit(self.ladder, (x*UNITE, y*UNITE))
                     p = Platform(x*UNITE, y*UNITE)
                     p.ladder = True
+                    #~ p.make_ladder()
                     tiletable[y].append(p)
                 elif map[y][x] == "P":
                     p = Platform(x*UNITE, y*UNITE)
