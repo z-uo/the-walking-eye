@@ -9,6 +9,10 @@ from peoples import *
 
 UNITE = 20
 
+class Ladder(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.rect = pygame.Rect(x, y, 2, UNITE)
 class Platform(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -16,16 +20,17 @@ class Platform(pygame.sprite.Sprite):
         self.wall = False
         self.cloud = False
         self.ladder = False
+        self.ladderrect = False
         self.door = False
         self.doordir = ""
-    #~ def make_ladder(self):
-        #~ self.ladder = True
-        #~ # ladder collision rect = 2 pixels in the center of the tile
-        #~ self.ladderrect = pygame.Rect((self.rect.x + (UNITE/2)) - 1,
-                                      #~ self.rect.y,
-                                      #~ (self.rect.x + (UNITE/2)) + 1,
-                                      #~ UNITE)
-        
+    def make_ladder(self):
+        self.ladder = True
+        # ladder collision rect = 2 pixels in the center of the tile
+        self.ladderrect = Ladder((self.rect.x + (UNITE/2)) - 1, self.rect.y)
+        ladderimg = pygame.Surface((2, UNITE)).convert()
+        ladderimg.fill(Color("#FF0000"))
+        pos = ((self.rect.x + (UNITE/2)) - 1, self.rect.y)
+        return ladderimg, pos
 
                 
 class Level(pygame.sprite.Sprite):
@@ -67,16 +72,18 @@ class Level(pygame.sprite.Sprite):
                     imgmap.blit(self.ladder, (x*UNITE, y*UNITE))
                     p = Platform(x*UNITE, y*UNITE)
                     p.cloud = True
-                    p.ladder = True
-                    #~ p.make_ladder()
+                    img, pos = p.make_ladder()
+                    imgmap.blit(img, pos)
+                    
                     tiletable[y].append(p)
                 # bottom ladder
                 elif map[y][x] == "b":
                     imgmap.blit(self.floor, (x*UNITE, y*UNITE))
                     imgmap.blit(self.ladder, (x*UNITE, y*UNITE))
                     p = Platform(x*UNITE, y*UNITE)
-                    p.ladder = True
-                    #~ p.make_ladder()
+                    img = p.make_ladder()
+                    img, pos = p.make_ladder()
+                    imgmap.blit(img, pos)
                     tiletable[y].append(p)
                 elif map[y][x] == "P":
                     p = Platform(x*UNITE, y*UNITE)

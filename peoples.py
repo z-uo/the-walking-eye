@@ -24,6 +24,53 @@ class Underfoot(pygame.sprite.Sprite):
         return coll
         
         
+class Lazer(pygame.sprite.Sprite):
+    def __init__(self, parent, direction, posx, posy, platform):
+        pygame.sprite.Sprite.__init__(self)
+        self.parent = parent
+        self.platform = platform
+        self.rect = pygame.Rect(0, 0, 8, 6)
+        self.direction = direction
+        if self.direction == "left":
+            self.rect.topright = (posx+2, posy+3)
+        if self.direction == "right":
+            self.rect.topleft = (posx+10, posy+3)
+        
+        self.image = pygame.Surface((8, 6)).convert()
+        self.image.fill(Color("#FF0000"))
+        
+    def tiles_to_check(self, tiletable):
+        x, y = int(self.rect.center[0]/UNITE), int(self.rect.center[1]/UNITE)
+        walltiles = []
+        for d in (tiletable[y][x], 
+                   tiletable[y+1][x], 
+                   tiletable[y][x+1], 
+                   tiletable[y-1][x], 
+                   tiletable[y][x-1], 
+                   tiletable[y+1][x+1], 
+                   tiletable[y-1][x-1], 
+                   tiletable[y+1][x-1], 
+                   tiletable[y-1][x+1]):
+            if d.wall:
+                walltiles.append(d)
+        return walltiles
+        
+    def update(self):
+        if self.direction == "left":
+            self.rect.x -= 8
+        if self.direction == "right":
+            self.rect.x += 8
+        if self.is_collide(self.tiles_to_check(self.platform)):
+            print "wall"
+            self.kill()
+            
+    def is_collide(self, platform):
+        coll = False
+        for p in platform:
+            if pygame.sprite.collide_rect(self, p):
+                coll = True
+        return coll
+        
 class Someone(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -76,16 +123,16 @@ class Someone(pygame.sprite.Sprite):
         self.underfoot.rect.topleft = (self.rect.left, self.rect.bottom)
         for p in platformladder:
             #verify one by one if underfoot collide platform and not the body
-            if not pygame.sprite.collide_rect(self, p) and pygame.sprite.collide_rect(self.underfoot, p):
+            if not pygame.sprite.collide_rect(self, p.ladderrect) and pygame.sprite.collide_rect(self.underfoot, p.ladderrect):
                 #he is on a ladder
                 return True
         return False
     def is_inladder(self, platformladder):
-        if  self.is_collide(platformladder):
+        for p in platformladder:
+            if pygame.sprite.collide_rect(self, p.ladderrect):
             # he is in a ladder
-            return True
+                return True
         return False
-        
         
     def is_collide(self, platform):
         for p in platform:
@@ -159,7 +206,11 @@ class Hero(Someone):
         self.onground = False
         self.oncloud = False
         self.cloudtimmer = 10
-        
+        self.acrosscloud = False
+        self.bullets = pygame.sprite.Group()
+        self.f = False
+        self.direction = "right"
+                
         self.onladder = False
         self.inladder = False
         self.hang = False
@@ -167,12 +218,15 @@ class Hero(Someone):
     def update(self, key, tiletable):
         """move hero and adjust if collision
         """
+        # see where the hero is
         walltiles, cloudtiles, laddertiles, doortiles = self.tiles_to_check(tiletable)
         self.onground = self.is_onground(walltiles)
         self.oncloud = self.is_oncloud(cloudtiles)
         self.inladder = self.is_inladder(laddertiles)
         self.onladder = self.is_onladder(laddertiles)
+        self.acrosscloud = False
         
+        # jump
         if self.onground or (self.oncloud and not self.yvec<0):
             self.yvec = 0
         else:
@@ -180,31 +234,42 @@ class Hero(Someone):
         if key["jump"] and (self.onground or self.oncloud):
             self.yvec = -10
         
+        # hang
         if self.hang and (key["jump"] or self.onground or self.oncloud or not self.inladder):
             self.hang = False
         if (key["up"] and self.inladder) or (key["down"] and self.onladder):
             self.hang = True
         
+        if self.hang:
+            self.yvec = 0
+            if key["up"]:
+                self.yvec = -2
+            if key["down"]:
+                self.yvec = 2
+                self.acrosscloud = True
+            
         
+        # fall from cloud
         if key["down"] and self.oncloud and not self.hang:
             self.cloudtimmer -= 1
             print self.cloudtimmer
             if self.cloudtimmer == 0:
                 self.yvec = 2
+                self.acrosscloud = True
         else:
             self.cloudtimmer = 10
         
-        
+        # walk
         self.xvec = 0
         if key["right"]:
             self.xvec += 2
+            self.direction = "right"
+            self.img = self.rimg
         if key["left"]:
             self.xvec -= 2
-            
-        if self.xvec > 0:
-            self.img = self.rimg
-        elif self.xvec < 0:
+            self.direction = "left"
             self.img = self.limg
+            
         
         # check horizontal move
         if self.xvec != 0:
@@ -225,7 +290,7 @@ class Hero(Someone):
         if self.yvec > 0:
             for i in range(self.yvec):
                 if not self.is_onground(walltiles):
-                    if not self.is_oncloud(cloudtiles) or self.cloudtimmer == 0:
+                    if not self.is_oncloud(cloudtiles) or self.acrosscloud:
                         self.rect = self.rect.move(0, 1)
                     else: break
                 else: break
@@ -238,10 +303,20 @@ class Hero(Someone):
                     self.yvec = 0 # cogne au plafond
                     self.rect = self.rect.move(0, 1)
                     break
+        
+        # fire
+        if key["fire"]:
+            self.bullet = Lazer(self, self.direction, self.rect.x, self.rect.y, tiletable)
+            self.bullets.add(self.bullet)
+            print "fire"
+        
+        self.bullets.update()
+            
         # check doors
         for d in doortiles:
             if pygame.sprite.collide_rect(self, d):
                 return d
         return False
+        
             
                 

@@ -20,7 +20,8 @@ class Game(object):
                     "down": False, 
                     "right": False, 
                     "left": False, 
-                    "jump": False}
+                    "jump": False, 
+                    "fire": False}
         self.levelList = [Level01(self), Level02(self), Level03(self), Level04(self)]
         self.nlevel = 0
         self.init_level()
@@ -62,6 +63,8 @@ class Game(object):
                     self.key["left"] = True
                 if e.key == K_x:
                     self.key["jump"] = True
+                if e.key == K_c:
+                    self.key["fire"] = True
             elif e.type == KEYUP:
                 if e.key == K_UP:
                     self.key["up"] = False
@@ -73,11 +76,14 @@ class Game(object):
                     self.key["left"] = False
                 if e.key == K_x:
                     self.key["jump"] = False
+                if e.key == K_c:
+                    self.key["fire"] = False
                     
     def blit(self):
         self.surfprov.blit(self.level.img, self.hero.rect, self.hero.rect)
         self.surfprov.blit(self.level.img, self.hero.underfoot.rect, self.hero.underfoot.rect)
         self.level.people.clear(self.surfprov, self.level.img)
+        self.hero.bullets.clear(self.surfprov, self.level.img)
         
     def update(self):
         # update
@@ -90,6 +96,7 @@ class Game(object):
         self.surfprov.blit(self.hero.img, self.hero.rect)
         self.surfprov.blit(self.hero.underfoot.img, self.hero.underfoot.rect)
         self.level.people.draw(self.surfprov)
+        self.hero.bullets.draw(self.surfprov)
         self.screen.blit(self.surfprov, (0, 0), self.level.offset)
         pygame.display.update()
         
