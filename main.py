@@ -32,7 +32,7 @@ class Game(object):
         self.surfprov = pygame.Surface(self.level.size)
         self.surfprov.blit(self.level.img, self.level.rect)
         self.hero = Hero()
-        self.hero.rect.topleft = self.level.init_hero_pos()
+        self.hero.init_level(self.level)
         self.surfprov.blit(self.hero.img, self.hero.rect)
         self.screen.blit(self.surfprov, (0, 0), self.level.offset)
         pygame.display.update()
@@ -43,6 +43,7 @@ class Game(object):
         prev = self.level.name
         self.level = self.levelList[self.nlevel]
         self.level.init_level()
+        self.hero.init_level(self.level)
         self.surfprov = pygame.Surface(self.level.size)
         self.surfprov.blit(self.level.img, self.level.rect)
         self.hero.rect.topleft = self.level.init_hero_pos(prev)
@@ -82,21 +83,21 @@ class Game(object):
     def blit(self):
         self.surfprov.blit(self.level.img, self.hero.rect, self.hero.rect)
         self.surfprov.blit(self.level.img, self.hero.underfoot.rect, self.hero.underfoot.rect)
-        self.level.people.clear(self.surfprov, self.level.img)
+        self.level.enemies.clear(self.surfprov, self.level.img)
         self.hero.bullets.clear(self.surfprov, self.level.img)
         
     def update(self):
         # update
-        exitblock = self.hero.update(self.key, self.level.tiletable)
+        exitblock = self.hero.update(self.key, self.level)
         if exitblock:
             self.change_level(exitblock.doordir)
-        #~ self.level.people.update(self.level.tiletable)
+        #~ self.level.enemies.update(self.level.tiletable)
             
     def draw(self):
+        self.level.enemies.draw(self.surfprov)
+        self.hero.bullets.draw(self.surfprov)
         self.surfprov.blit(self.hero.img, self.hero.rect)
         self.surfprov.blit(self.hero.underfoot.img, self.hero.underfoot.rect)
-        self.level.people.draw(self.surfprov)
-        self.hero.bullets.draw(self.surfprov)
         self.screen.blit(self.surfprov, (0, 0), self.level.offset)
         pygame.display.update()
         

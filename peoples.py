@@ -8,6 +8,22 @@ from functions import *
 
 UNITE = 20
 
+def is_collide(obj, platform):
+    for p in platform:
+        if pygame.sprite.collide_rect(obj, p):
+            return True
+    return False
+    
+def is_ontile(obj, platform):
+    obj.underfoot.rect.topleft = (obj.rect.left, obj.rect.bottom)
+    for p in platform:
+        # verify one by one if underfoot collide platform and not the body (for clouds)
+        if not pygame.sprite.collide_rect(obj, p) and pygame.sprite.collide_rect(obj.underfoot, p):
+            # he is on something
+            return True
+    return False
+
+        
 class Underfoot(pygame.sprite.Sprite):
     def __init__(self, width):
         pygame.sprite.Sprite.__init__(self)
@@ -15,13 +31,6 @@ class Underfoot(pygame.sprite.Sprite):
         
         self.img = pygame.Surface((width, 1)).convert()
         self.img.fill(Color("#FF0000"))
-        
-    def is_collide(self, platform):
-        coll = False
-        for p in platform:
-            if pygame.sprite.collide_rect(self, p):
-                coll = True
-        return coll
         
         
 class Lazer(pygame.sprite.Sprite):
@@ -31,45 +40,36 @@ class Lazer(pygame.sprite.Sprite):
         self.platform = platform
         self.rect = pygame.Rect(0, 0, 8, 6)
         self.direction = direction
+        self.isdying = False
         if self.direction == "left":
-            self.rect.topright = (posx+2, posy+3)
+            self.rect.topright = (posx+10, posy+3)
+            self.vecteur = -8
         if self.direction == "right":
-            self.rect.topleft = (posx+10, posy+3)
-        
+            self.rect.topleft = (posx+2, posy+3)
+            self.vecteur = 8
         self.image = pygame.Surface((8, 6)).convert()
         self.image.fill(Color("#FF0000"))
         
-    def tiles_to_check(self, tiletable):
-        x, y = int(self.rect.center[0]/UNITE), int(self.rect.center[1]/UNITE)
-        walltiles = []
-        for d in (tiletable[y][x], 
-                   tiletable[y+1][x], 
-                   tiletable[y][x+1], 
-                   tiletable[y-1][x], 
-                   tiletable[y][x-1], 
-                   tiletable[y+1][x+1], 
-                   tiletable[y-1][x-1], 
-                   tiletable[y+1][x-1], 
-                   tiletable[y-1][x+1]):
-            if d.wall:
-                walltiles.append(d)
-        return walltiles
-        
     def update(self):
-        if self.direction == "left":
-            self.rect.x -= 8
-        if self.direction == "right":
-            self.rect.x += 8
-        if self.is_collide(self.tiles_to_check(self.platform)):
-            print "wall"
-            self.kill()
+        if not self.isdying:
+            self.rect.x = self.rect.x + self.vecteur
+            #~ if is_collide(self, self.platform):
+            for i in range(abs(self.vecteur)):
+                if is_collide(self, self.platform):
+                    if self.vecteur > 0:
+                        self.rect.x = self.rect.x - 1
+                    if self.vecteur < 0:
+                        self.rect.x = self.rect.x + 1
+                    self.image.fill(Color("#FFFF00"))
+                        
+                    print "wall"
+                    self.isdying = True
+                else: 
+                    break
+                
+        else:
+                self.kill()
             
-    def is_collide(self, platform):
-        coll = False
-        for p in platform:
-            if pygame.sprite.collide_rect(self, p):
-                coll = True
-        return coll
         
 class Someone(pygame.sprite.Sprite):
     def __init__(self):
@@ -77,68 +77,6 @@ class Someone(pygame.sprite.Sprite):
         self.onground = False
         self.xvec = 0 # horizontal
         self.yvec = 0 # vertical
-        
-    def tiles_to_check(self, tiletable):
-        x, y = int(self.rect.center[0]/UNITE), int(self.rect.center[1]/UNITE)
-        walltiles = []
-        cloudtiles = []
-        doortiles = []
-        laddertiles = []
-        for d in (tiletable[y][x], 
-                   tiletable[y+1][x], 
-                   tiletable[y][x+1], 
-                   tiletable[y-1][x], 
-                   tiletable[y][x-1], 
-                   tiletable[y+1][x+1], 
-                   tiletable[y-1][x-1], 
-                   tiletable[y+1][x-1], 
-                   tiletable[y-1][x+1]):
-            if d.wall:
-                walltiles.append(d)
-            if d.cloud:
-                cloudtiles.append(d)
-            if d.ladder:
-                laddertiles.append(d)
-            if d.door:
-                doortiles.append(d)
-        return walltiles, cloudtiles, laddertiles, doortiles
-        
-    def is_onground(self, platform):
-        self.underfoot.rect.topleft = (self.rect.left, self.rect.bottom)
-        if self.underfoot.is_collide(platform) and not self.is_collide(platform):
-            # he is on the ground
-            return True
-        return False
-        
-    def is_oncloud(self, platformcloud):
-        self.underfoot.rect.topleft = (self.rect.left, self.rect.bottom)
-        for p in platformcloud:
-            #verify one by one if underfoot collide platform and not the body
-            if not pygame.sprite.collide_rect(self, p) and pygame.sprite.collide_rect(self.underfoot, p):
-                #he is on a cloud
-                return True
-        return False
-        
-    def is_onladder(self, platformladder):
-        self.underfoot.rect.topleft = (self.rect.left, self.rect.bottom)
-        for p in platformladder:
-            #verify one by one if underfoot collide platform and not the body
-            if not pygame.sprite.collide_rect(self, p.ladderrect) and pygame.sprite.collide_rect(self.underfoot, p.ladderrect):
-                #he is on a ladder
-                return True
-        return False
-    def is_inladder(self, platformladder):
-        for p in platformladder:
-            if pygame.sprite.collide_rect(self, p.ladderrect):
-            # he is in a ladder
-                return True
-        return False
-        
-    def is_collide(self, platform):
-        for p in platform:
-            if pygame.sprite.collide_rect(self, p):
-                return True
-        return False
         
         
 class Badguy(Someone):
@@ -203,27 +141,34 @@ class Hero(Someone):
         self.limg = pygame.transform.flip(self.rimg, True, False)
         self.img = self.rimg
         self.underfoot = Underfoot(self.rect.width)
+        self.direction = "right"
+        
+    def init_level(self, level):
+        self.walltiles = level.walls
+        self.cloudtiles = level.clouds
+        self.laddertiles = level.ladders
+        self.doortiles = level.doors
         self.onground = False
         self.oncloud = False
         self.cloudtimmer = 10
         self.acrosscloud = False
         self.bullets = pygame.sprite.Group()
         self.f = False
-        self.direction = "right"
                 
         self.onladder = False
         self.inladder = False
         self.hang = False
         
+        self.rect.topleft = level.init_hero_pos()
+        
     def update(self, key, tiletable):
         """move hero and adjust if collision
         """
         # see where the hero is
-        walltiles, cloudtiles, laddertiles, doortiles = self.tiles_to_check(tiletable)
-        self.onground = self.is_onground(walltiles)
-        self.oncloud = self.is_oncloud(cloudtiles)
-        self.inladder = self.is_inladder(laddertiles)
-        self.onladder = self.is_onladder(laddertiles)
+        self.onground = is_ontile(self, self.walltiles)
+        self.oncloud = is_ontile(self, self.cloudtiles)
+        self.inladder = is_collide(self, self.laddertiles)
+        self.onladder = is_ontile(self, self.laddertiles)
         self.acrosscloud = False
         
         # jump
@@ -276,12 +221,12 @@ class Hero(Someone):
             self.rect = self.rect.move(self.xvec, 0)
             if self.xvec > 0:
                 for i in range(self.xvec/2):
-                    if self.is_collide(walltiles):
+                    if is_collide(self, self.walltiles):
                         self.rect = self.rect.move(-2, 0)
                     else: break
             elif self.xvec < 0:
                 for i in range(-self.xvec/2):
-                    if self.is_collide(walltiles):
+                    if is_collide(self, self.walltiles):
                         self.rect = self.rect.move(2, 0)
                     else: break
         
@@ -289,15 +234,15 @@ class Hero(Someone):
         # check moving down
         if self.yvec > 0:
             for i in range(self.yvec):
-                if not self.is_onground(walltiles):
-                    if not self.is_oncloud(cloudtiles) or self.acrosscloud:
+                if not is_ontile(self, self.walltiles):
+                    if not is_ontile(self, self.cloudtiles) or self.acrosscloud:
                         self.rect = self.rect.move(0, 1)
                     else: break
                 else: break
         # check moving up
         elif self.yvec < 0:
             for i in range(-self.yvec):
-                if not self.is_collide(walltiles):
+                if not is_collide(self, self.walltiles):
                     self.rect = self.rect.move(0, -1)
                 else: 
                     self.yvec = 0 # cogne au plafond
@@ -306,14 +251,14 @@ class Hero(Someone):
         
         # fire
         if key["fire"]:
-            self.bullet = Lazer(self, self.direction, self.rect.x, self.rect.y, tiletable)
+            self.bullet = Lazer(self, self.direction, self.rect.x, self.rect.y, self.walltiles)
             self.bullets.add(self.bullet)
             print "fire"
         
         self.bullets.update()
             
         # check doors
-        for d in doortiles:
+        for d in self.doortiles:
             if pygame.sprite.collide_rect(self, d):
                 return d
         return False

@@ -9,103 +9,94 @@ from peoples import *
 
 UNITE = 20
 
-class Ladder(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        pygame.sprite.Sprite.__init__(self)
-        self.rect = pygame.Rect(x, y, 2, UNITE)
+
+def create_map(map, size):
+    # images
+    imgmap = pygame.Surface(size).convert()
+    imgmap.fill(Color("#000000"))
+    wall = loadimg("wall.png")
+    ladder = loadimg("ladder.png")
+    floor = loadimg("floor.png")
+    # groups
+    walls = pygame.sprite.Group()
+    clouds = pygame.sprite.Group()
+    ladders = pygame.sprite.Group()
+    doors = pygame.sprite.Group()
+    enemies = pygame.sprite.Group()
+    for y in range(len(map)):
+        for x in range(len(map[y])):
+            # wall
+            if map[y][x] == "#":
+                imgmap.blit(wall, (x*UNITE, y*UNITE))
+                p = Platform(x*UNITE, y*UNITE)
+                p.wall = True
+                walls.add(p)
+            # floor
+            elif map[y][x] == ",":
+                imgmap.blit(floor, (x*UNITE, y*UNITE))
+            # bad guy
+            elif map[y][x] == "<":
+                imgmap.blit(floor, (x*UNITE, y*UNITE))
+                b = Badguy(x*UNITE, y*UNITE, -1)
+                enemies.add(b)
+            # cloud
+            elif map[y][x] == "c":
+                p = Platform(x*UNITE, y*UNITE)
+                p.cloud = True
+                clouds.add(p)
+            # top ladder
+            elif map[y][x] == "t":
+                p = Platform(x*UNITE, y*UNITE)
+                p.cloud = True
+                clouds.add(p)
+                
+                imgmap.blit(ladder, (x*UNITE, y*UNITE))
+                p = Platform((x*UNITE + (UNITE/2)) - 1, y*UNITE, 2, UNITE)
+                p.ladder = True
+                imgmap.blit(p.return_rect_img(), p.rect)
+                ladders.add(p)
+            # bottom ladder
+            elif map[y][x] == "b":
+                imgmap.blit(floor, (x*UNITE, y*UNITE))
+                imgmap.blit(ladder, (x*UNITE, y*UNITE))
+                p = Platform((x*UNITE + (UNITE/2)) - 1, y*UNITE, 2, UNITE)
+                p.ladder = True
+                imgmap.blit(p.return_rect_img(), p.rect)
+                ladders.add(p)
+            # door -1
+            elif map[y][x] == "P":
+                p = Platform(x*UNITE, y*UNITE)
+                p.door = True
+                p.doordir = -1
+                doors.add(p)
+            # door +1
+            elif map[y][x] == "N":
+                p = Platform(x*UNITE, y*UNITE)
+                p.door = True
+                p.doordir = 1
+                doors.add(p)
+    return imgmap, walls, clouds, ladders, doors, enemies
+    
+    
 class Platform(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, x, y, w=UNITE, h=UNITE):
         pygame.sprite.Sprite.__init__(self)
-        self.rect = pygame.Rect(x, y, UNITE, UNITE)
+        self.rect = pygame.Rect(x, y, w, h)
         self.wall = False
         self.cloud = False
         self.ladder = False
-        self.ladderrect = False
         self.door = False
         self.doordir = ""
-    def make_ladder(self):
-        self.ladder = True
-        # ladder collision rect = 2 pixels in the center of the tile
-        self.ladderrect = Ladder((self.rect.x + (UNITE/2)) - 1, self.rect.y)
-        ladderimg = pygame.Surface((2, UNITE)).convert()
-        ladderimg.fill(Color("#FF0000"))
-        pos = ((self.rect.x + (UNITE/2)) - 1, self.rect.y)
-        return ladderimg, pos
-
-                
-class Level(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
         
-    def create(self, map, size):
-        tiletable = []
-        doors = pygame.sprite.Group()
-        people = pygame.sprite.Group()
-        imgmap = pygame.Surface(size).convert()
-        imgmap.fill(Color("#000000"))
-        for y in range(len(map)):
-            tiletable.append([])
-            for x in range(len(map[y])):
-                if map[y][x] == "#":
-                    imgmap.blit(self.wall, (x*UNITE, y*UNITE))
-                    p = Platform(x*UNITE, y*UNITE)
-                    p.wall = True
-                    tiletable[y].append(p)
-                elif map[y][x] == ",":
-                    imgmap.blit(self.floor, (x*UNITE, y*UNITE))
-                    p = Platform(x*UNITE, y*UNITE)
-                    tiletable[y].append(p)
-                # bad guy
-                elif map[y][x] == "<":
-                    imgmap.blit(self.floor, (x*UNITE, y*UNITE))
-                    p = Platform(x*UNITE, y*UNITE)
-                    tiletable[y].append(p)
-                    b = Badguy(x*UNITE, y*UNITE, -1)
-                    people.add(b)
-                # cloud
-                elif map[y][x] == "c":
-                    p = Platform(x*UNITE, y*UNITE)
-                    p.cloud = True
-                    tiletable[y].append(p)
-                # top ladder
-                elif map[y][x] == "t":
-                    imgmap.blit(self.ladder, (x*UNITE, y*UNITE))
-                    p = Platform(x*UNITE, y*UNITE)
-                    p.cloud = True
-                    img, pos = p.make_ladder()
-                    imgmap.blit(img, pos)
-                    
-                    tiletable[y].append(p)
-                # bottom ladder
-                elif map[y][x] == "b":
-                    imgmap.blit(self.floor, (x*UNITE, y*UNITE))
-                    imgmap.blit(self.ladder, (x*UNITE, y*UNITE))
-                    p = Platform(x*UNITE, y*UNITE)
-                    img = p.make_ladder()
-                    img, pos = p.make_ladder()
-                    imgmap.blit(img, pos)
-                    tiletable[y].append(p)
-                elif map[y][x] == "P":
-                    p = Platform(x*UNITE, y*UNITE)
-                    p.door = True
-                    p.doordir = -1
-                    doors.add(p)
-                    tiletable[y].append(p)
-                elif map[y][x] == "N":
-                    p = Platform(x*UNITE, y*UNITE)
-                    p.door = True
-                    p.doordir = 1
-                    doors.add(p)
-                    tiletable[y].append(p)
-                else:
-                    p = Platform(x*UNITE, y*UNITE)
-                    tiletable[y].append(p)
-        return imgmap, tiletable, people, doors
+    def return_rect_img(self):
+        img = pygame.Surface((self.rect.w, self.rect.h)).convert()
+        img.fill(Color("#FF0000"))
+        return img
         
         
-class Level01(Level):
+class Level01(pygame.sprite.Sprite):
     def __init__(self, parent):
-        Level.__init__(self)
+        pygame.sprite.Sprite.__init__(self)
         self.parent = parent
         self.name = "level01"
         
@@ -116,7 +107,7 @@ class Level01(Level):
                "#........#",
                "#..,,,,..#",
                "#..cctc..#",
-               "#,,<,b...#",
+               "#,,,,b...#",
                "######...#",
                "#....,,,,#",
                "#....#######",
@@ -125,10 +116,7 @@ class Level01(Level):
         self.rect = (0, 0, 200, 240)
         self.size = (200, 240)
         self.offset = (0, 40, 200, 240)
-        self.wall, wallrect = loadimg("wall.png", True)
-        self.ladder, ladderrect = loadimg("ladder.png", True)
-        self.floor = loadimg("floor.png")
-        self.img, self.tiletable, self.people, self.doors = self.create(map, self.size)
+        self.img, self.walls, self.clouds, self.ladders, self.doors, self.enemies = create_map(map, self.size)
         
     def init_hero_pos(self, prev=""):
         if prev == "level02" :
@@ -137,9 +125,9 @@ class Level01(Level):
             return (94, 20)
         
         
-class Level02(Level):
+class Level02(pygame.sprite.Sprite):
     def __init__(self, parent):
-        Level.__init__(self)
+        pygame.sprite.Sprite.__init__(self)
         self.parent = parent
         self.name = "level02"
         
@@ -159,7 +147,7 @@ class Level02(Level):
         self.offset = (40, 0, 240, 200)
         self.wall, wallrect = loadimg("wall.png", True)
         self.floor = loadimg("floor.png")
-        self.img, self.tiletable, self.people, self.doors = self.create(map, self.size)
+        self.img, self.walls, self.clouds, self.ladders, self.doors, self.enemies = create_map(map, self.size)
         
     def init_hero_pos(self, prev=""):
         if prev == "level01" :
@@ -170,9 +158,9 @@ class Level02(Level):
             return (40, 162)
         
         
-class Level03(Level):
+class Level03(pygame.sprite.Sprite):
     def __init__(self, parent):
-        Level.__init__(self)
+        pygame.sprite.Sprite.__init__(self)
         self.parent = parent
         self.name = "level03"
     def init_level(self):
@@ -191,7 +179,7 @@ class Level03(Level):
         self.offset = (40, 0, 240, 200)
         self.wall, wallrect = loadimg("wall.png", True)
         self.floor = loadimg("floor.png")
-        self.img, self.tiletable, self.people, self.doors = self.create(map, self.size)
+        self.img, self.walls, self.clouds, self.ladders, self.doors, self.enemies = create_map(map, self.size)
         
     def init_hero_pos(self, prev=""):
         if prev == "level02" :
@@ -202,9 +190,9 @@ class Level03(Level):
             return (40, 62)
         
         
-class Level04(Level):
+class Level04(pygame.sprite.Sprite):
     def __init__(self, parent):
-        Level.__init__(self)
+        pygame.sprite.Sprite.__init__(self)
         self.parent = parent
         self.name = "level04"
     def init_level(self):
@@ -223,7 +211,7 @@ class Level04(Level):
         self.offset = (40, 0, 240, 200)
         self.wall, wallrect = loadimg("wall.png", True)
         self.floor = loadimg("floor.png")
-        self.img, self.tiletable, self.people, self.doors = self.create(map, self.size)
+        self.img, self.walls, self.clouds, self.ladders, self.doors, self.enemies = create_map(map, self.size)
         
     def init_hero_pos(self, prev=""):
         if prev == "level03" :
