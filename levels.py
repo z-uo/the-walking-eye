@@ -7,7 +7,7 @@ from pygame.locals import *
 from functions import *
 from peoples import *
 
-UNITE = 20
+UNITE = 32
 
 
 def create_map(map, size):
@@ -107,22 +107,23 @@ class Level01(pygame.sprite.Sprite):
                "#........#",
                "#..,,,,..#",
                "#..cctc..#",
-               "#,,,,b...#",
+               "#,,,<b...#",
                "######...#",
                "#....,,,,#",
                "#....#######",
                "#,,,,,,,,,N#",
                "############"]
-        self.rect = (0, 0, 200, 240)
-        self.size = (200, 240)
-        self.offset = (0, 40, 200, 240)
+        self.rect = (0, 0, 384, 384)
+        self.size = (384, 384)
+        self.offset = (0, 64, 320, 320)
         self.img, self.walls, self.clouds, self.ladders, self.doors, self.enemies = create_map(map, self.size)
+        self.img = loadimg("map1.png")
         
     def init_hero_pos(self, prev=""):
         if prev == "level02" :
             return  (188, 202)
         else:
-            return (94, 20)
+            return (144, 32)
         
         
 class Level02(pygame.sprite.Sprite):
@@ -135,9 +136,9 @@ class Level02(pygame.sprite.Sprite):
         map = ["##############",
                "###.........N#",
                "###.........N#",
-               "###....,,,,,N#",
+               "###....,,<,,N#",
                "###....#######",
-               "###,,,.....#",
+               "###,<,.....#",
                "######...,,#",
                "######.,,###",
                "#P,,,,,#####",
@@ -167,12 +168,12 @@ class Level03(pygame.sprite.Sprite):
         map = ["############",
                "#P.........#",
                "#P.........#",
-               "#P,,,,,....#",
+               "#P,,,,<....#",
                "#######,...#",
                "########...#",
                "#######..,,#",
                "###......#####",
-               "###,,,,,,,,,N#",
+               "###,,,,<,,,,N#",
                "##############"]
         self.rect = (0, 0, 240, 200)
         self.size = (240, 200)
@@ -199,12 +200,12 @@ class Level04(pygame.sprite.Sprite):
         map = ["############",
                "###........#",
                "###........#",
-               "###,,,,....#",
+               "###,,<,....#",
                "#######,...#",
                "########...#",
                "#######..,,#",
                "###......###",
-               "#P,,,,,,,,,#",
+               "#P,,,,,,,<,#",
                "############"]
         self.rect = (0, 0, 240, 200)
         self.size = (240, 200)
